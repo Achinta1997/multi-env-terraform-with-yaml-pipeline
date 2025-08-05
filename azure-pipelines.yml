@@ -1,0 +1,103 @@
+trigger: none
+
+pool: 
+  vmImage: ubuntu-latest
+
+variables:
+  svc: 'my-webapp-connect'
+  config-path: '$(System.DefaultWorkingDirectory)/driver'
+
+
+parameters: 
+  - name: init
+    type: boolean
+    default: false
+  
+  
+  - name: validate
+    type: boolean
+    default: false
+  
+  
+  - name: plan
+    type: boolean
+    default: false
+  
+  
+  - name: apply
+    type: boolean
+    default: false
+
+  - name: environment
+    type: string
+    default: dev
+    values:
+      - dev
+      - preprod
+      - prod
+  
+# '$()' -- variable
+# '${{}}' -- parameter
+
+steps:
+
+# task 1: terraform ko install marenge
+- task: TerraformInstaller@1
+  displayName: 'Terraform tool ko install kar rahe hain'
+  inputs:
+    terraformVersion: 'latest'
+
+
+
+# task 2: terraform init
+- task: TerraformTask@5
+  displayName: 'Terraform init ho jaa'
+  condition: eq('${{parameters.init}}',true)
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(config-path)'
+    backendServiceArm: '$(svc)'
+    backendAzureRmStorageAccountName: 'achintastg007'
+    backendAzureRmContainerName: 'my-terra'
+    backendAzureRmKey: '${{parameters.environment}}.tfstate'
+
+
+
+# task 3: terraform validate
+- task: TerraformTask@5
+  displayName: 'Terraform project ko validate ka rahe hain'
+  condition: '${{parameters.validate}}'
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: '$(config-path)'
+
+
+# task 4: terraform plan
+- task: TerraformTask@5
+  displayName: 'Terraform ko plan kar rahe hain'
+  condition: '${{parameters.plan}}'
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '$(config-path)'
+    commandOptions: '-var-file=$(config-path)/${{parameters.environment}}.tfvars'
+    environmentServiceNameAzureRM: '$(svc)'
+
+
+# task 5: terraform apply
+- task: TerraformTask@5
+  displayName: 'Terraform ko apply mar dia'
+  condition: '${{parameters.apply}}'
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '$(config-path)'
+    commandOptions: '-var-file=$(config-path)/${{parameters.environment}}.tfvars'
+    environmentServiceNameAzureRM: '$(svc)'
+
+
+
+
+
