@@ -1,0 +1,146 @@
+trigger: none
+
+pool: apna-pool
+
+variables:
+  config-path: '$(System.DefaultWorkingDirectory)/driver'
+  svc: 'my-webapp-connect'
+
+parameters: 
+  - name: init
+    type: boolean
+    default: false
+  
+  
+  - name: validate
+    type: boolean
+    default: false
+  
+  
+  - name: plan
+    type: boolean
+    default: false
+  
+  
+  - name: apply
+    type: boolean
+    default: false
+
+  - name: environment
+    type: string
+    default: preprod
+    values:
+      - dev
+      - preprod
+      - prod
+
+# ${{parameters.environment}}.tfstate  == 'preprod.tfstate'
+
+# '${{parameters.environment}}.tfvars'  = 'preprod.tfvars'
+
+# -var-file=../resource_group/dev.tfvars
+# terraform plan -var-file=tfvars ke file ka path
+
+  
+# '$()' -- variable
+# '${{}}' -- parameter
+# $(config-path)/${{parameters.environment}}.tfvars
+
+steps:
+
+# task 1: terraform ko install marenge
+- task: TerraformInstaller@1
+  displayName: 'Terraform tool ko install kar rahe hain'
+  inputs:
+    terraformVersion: 'latest'
+
+
+
+# task 2: terraform init
+- task: TerraformTask@5
+  displayName: 'Terraform init chal ja'
+  condition: '${{parameters.init}}'
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(config-path)'
+    backendServiceArm: '$(svc)'
+    backendAzureRmStorageAccountName: 'achintastorage007'
+    backendAzureRmContainerName: 'my-terra'
+    backendAzureRmKey: '${{parameters.environment}}.tfstate'
+
+
+
+# task 3: terraform validate
+- task: TerraformTask@5
+  displayName: 'Terraform project ko validate ka rahe hain'
+  condition: '${{parameters.validate}}'
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: $(config-path)
+
+
+# task 4: terraform plan
+- task: TerraformTask@5
+  displayName: 'Terraform plan chala de'
+  condition: '${{parameters.plan}}'
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '$(config-path)'
+    commandOptions: '-var-file=${{parameters.environment}}.tfvars'
+    environmentServiceNameAzureRM: '$(svc)'
+
+
+- task: tfsec@1
+  continueOnError: true
+  inputs:
+    version: 'v1.26.0'
+    dir: '$(System.DefaultWorkingDirectory)'
+    
+- task: CmdLine@2
+  displayName: 'tflint test'
+  continueOnError: true
+  inputs:
+    script: 'tflint --chdir=$(System.DefaultWorkingDirectory) --recursive -f junit > tflint_result.xml'
+    workingDirectory: '$(Common.TestResultsDirectory)'
+
+- task: PublishTestResults@2
+  displayName: 'publish tflint result'
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: 'tflint_result.xml'
+    searchFolder: '$(Common.TestResultsDirectory)'
+    testRunTitle: 'tflint-run'
+
+- task: CmdLine@2
+  displayName: 'checkov test'
+  continueOnError: true
+  inputs:
+    script: 'checkov -d $(System.DefaultWorkingDirectory) -o junitxml > checkov_result.xml'
+    workingDirectory: '$(Common.TestResultsDirectory)'
+
+- task: PublishTestResults@2
+  displayName: 'publish checkov result'
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: 'checkov_result.xml'
+    searchFolder: '$(Common.TestResultsDirectory)'
+    testRunTitle: 'checkov-run'
+
+# task 5: terraform apply
+# - task: TerraformTask@5
+#   displayName: 'Terraform ko apply mar dia'
+#   condition: '${{parameters.apply}}'
+#   inputs:
+#     provider: 'azurerm'
+#     command: 'apply'
+#     workingDirectory: $(config-path)
+#     commandOptions: '-var-file=$(config-path)/${{parameters.environment}}.tfvars'
+#     environmentServiceNameAzureRM: '$(svc)'
+
+
+
+
+

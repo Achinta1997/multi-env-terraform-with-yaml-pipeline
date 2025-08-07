@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Terraform + ADO Pipeline Structure</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f7f9fb;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    .folder {
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    .item {
+      margin-left: 20px;
+      margin-top: 6px;
+    }
+
+    .subfolder {
+      margin-left: 20px;
+      font-weight: bold;
+      color: #2a7d2e;
+    }
+
+    .tfvars {
+      color: #b35f00;
+    }
+
+    code {
+      background-color: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📦 Terraform + Azure DevOps Project Structure</h2>
+
+    <div class="folder">📁 terraform/</div>
+    <div class="item">📄 <code>main.tf</code></div>
+    <div class="item">📄 <code>variables.tf</code></div>
+    <div class="item">📄 <code>outputs.tf</code></div>
+    <div class="item tfvars">📄 <code>dev.tfvars</code></div>
+    <div class="item tfvars">📄 <code>preprod.tfvars</code></div>
+    <div class="item tfvars">📄 <code>prod.tfvars</code></div>
+
+    <div class="folder">📁 modules/</div>
+    <div class="subfolder">📁 resource_group/</div>
+    <div class="subfolder">📁 storage_account/</div>
+
+    <div class="item" style="margin-top: 20px;">📄 <code>azure-pipelines.yml</code> (in root)</div>
+  </div>
+</body>
+</html>
